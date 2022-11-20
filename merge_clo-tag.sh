@@ -9,7 +9,7 @@ gsa() {
 
 	git remote add fw-api https://git.codelinaro.org/clo/la/platform/vendor/qcom-opensource/wlan/fw-api
 	git fetch fw-api $tag
-	git merge -S -s ours --no-commit --allow-unrelated-histories FETCH_HEAD
+	git merge -s ours --no-commit --allow-unrelated-histories FETCH_HEAD
 	git read-tree --prefix=drivers/staging/fw-api -u FETCH_HEAD
 	git commit -s -m "Merge tag '${tag}' of https://git.codelinaro.org/clo/la/platform/vendor/qcom-opensource/wlan/fw-api"
 
