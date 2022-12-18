@@ -49,7 +49,7 @@ DEVICE="Realme 5 Series (r5x)"
 export DEVICE
 CODENAME="r5x"
 export CODENAME
-DEFCONFIG="vendor/trinket_oppo/trinket-perf_defconfig"
+DEFCONFIG="vendor/RMX1911_defconfig"
 export DEFCONFIG
 COMMIT_HASH=$(git rev-parse --short HEAD)
 export COMMIT_HASH
