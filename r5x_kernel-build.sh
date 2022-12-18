@@ -151,6 +151,8 @@ compile() {
 
 	git clone --depth=1 https://github.com/JaswantTeja/AnyKernel3.git AnyKernel
 	cp out/arch/arm64/boot/Image.gz-dtb AnyKernel
+        cp out/arch/arm64/boot/dtb.img AnyKernel3
+        cp out/arch/arm64/boot/dtbo.img AnyKernel3
 }
 # Zipping
 zipping() {
