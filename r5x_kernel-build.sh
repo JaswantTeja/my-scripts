@@ -49,7 +49,7 @@ DEVICE="Realme 5 Series (r5x)"
 export DEVICE
 CODENAME="r5x"
 export CODENAME
-DEFCONFIG="vendor/RMX1911_defconfig"
+DEFCONFIG="vendor/trinket_oppo/trinket-perf_defconfig"
 export DEFCONFIG
 COMMIT_HASH=$(git rev-parse --short HEAD)
 export COMMIT_HASH
@@ -151,8 +151,7 @@ compile() {
 
 	git clone --depth=1 https://github.com/JaswantTeja/AnyKernel3.git AnyKernel
 	cp out/arch/arm64/boot/Image.gz-dtb AnyKernel
-        cp out/arch/arm64/boot/dtb.img AnyKernel3
-        cp out/arch/arm64/boot/dtbo.img AnyKernel3
+        cp out/arch/arm64/boot/dtbo.img AnyKernel
 }
 # Zipping
 zipping() {
