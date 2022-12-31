@@ -1,0 +1,187 @@
+From 2d6e5b5a260229a9cd7093a76c4c7d261c9fac06 Mon Sep 17 00:00:00 2001
+From: shygos <mossynine@gmail.com>
+Date: Thu, 1 Dec 2022 02:51:38 +0700
+Subject: [PATCH 1/1] include/wait: Remove even more oppo crap
+
+---
+ include/linux/wait.h        | 60 +------------------------------------
+ kernel/locking/mutex.c      |  5 +---
+ kernel/locking/rwsem-xadd.c |  6 ----
+ kernel/locking/semaphore.c  |  8 +----
+ kernel/sched/completion.c   |  4 +--
+ 5 files changed, 4 insertions(+), 79 deletions(-)
+
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 201d567e50..dfae841fec 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -10,10 +10,6 @@
+ 
+ #include <asm/current.h>
+ #include <uapi/linux/wait.h>
+-#ifdef CONFIG_PRODUCT_REALME_TRINKET//Fanhong.Kong@ProDrv.CHG,add 2018/12/19 for DeathHealer kernel 4.14
+-#include <linux/signal.h>
+-#include <linux/sched.h>
+-#endif /*CONFIG_PRODUCT_REALME_TRINKET*/
+ 
+ typedef struct wait_queue_entry wait_queue_entry_t;
+ 
+@@ -260,56 +256,6 @@ static inline void wake_up_pollfree(struct wait_queue_head *wq_head)
+ 
+ extern void init_wait_entry(struct wait_queue_entry *wq_entry, int flags);
+ 
+-#ifdef CONFIG_PRODUCT_REALME_TRINKET//Fanhong.Kong@ProDrv.CHG,add 2018/12/19 for DeathHealer kernel 4.14
+-/*signal.h include wait.h,copy from signal.h and renamed,other wise it would redefined*/
+-/*
+-static inline int signal_pending(struct task_struct *p)
+-{
+-	return unlikely(test_tsk_thread_flag(p,TIF_SIGPENDING));
+-}
+-
+-static inline int __fatal_signal_pending(struct task_struct *p)
+-{
+-	return unlikely(sigismember(&p->pending.signal, SIGKILL));
+-}
+-
+-static inline int fatal_signal_pending(struct task_struct *p)
+-{
+-	return signal_pending(p) && __fatal_signal_pending(p);
+-}
+-*/
+-
+-static inline int hung_long_signal_pending(struct task_struct *p)
+-{
+-	return unlikely(test_tsk_thread_flag(p,TIF_SIGPENDING));
+-}
+-
+-static inline int __hung_long_fatal_signal_pending(struct task_struct *p)
+-{
+-	return unlikely(sigismember(&p->pending.signal, SIGKILL));
+-}
+-
+-static inline int hung_long_fatal_signal_pending(struct task_struct *p)
+-{
+-	return hung_long_signal_pending(p) && __hung_long_fatal_signal_pending(p);
+-}
+-
+-#ifdef CONFIG_PRODUCT_REALME_TRINKET
+-/* fanhui@PhoneSW.BSP, 2016/02/02, DeathHealer, set the task to be killed */
+-#define PF_OPPO_KILLING	0x00000001
+-#endif
+-
+-//#ifdef CONFIG_PRODUCT_REALME_TRINKET //fangpan@Swdp.shanghai,2015/11/12
+-static inline int hung_long_and_fatal_signal_pending(struct task_struct *p)
+-{
+-#ifdef CONFIG_DETECT_HUNG_TASK
+-	return hung_long_fatal_signal_pending(p) && (p->flags & PF_OPPO_KILLING);
+-#else
+-	return 0;
+-#endif
+-}
+-//#endif
+-#endif /*CONFIG_PRODUCT_REALME_TRINKET*/
+ /*
+  * The below macro ___wait_event() has an explicit shadow of the __ret
+  * variable when used from the wait_event_*() macros.
+@@ -321,7 +267,7 @@ static inline int hung_long_and_fatal_signal_pending(struct task_struct *p)
+  * on purpose; we use long where we can return timeout values and int
+  * otherwise.
+  */
+-//#ifdef CONFIG_PRODUCT_REALME_TRINKET //fangpan@Swdp.shanghai,2015/11/12
++
+ #define ___wait_event(wq_head, condition, state, exclusive, ret, cmd)		\
+ ({										\
+ 	__label__ __out;							\
+@@ -340,15 +286,11 @@ static inline int hung_long_and_fatal_signal_pending(struct task_struct *p)
+ 			goto __out;						\
+ 		}								\
+ 										\
+-		if(hung_long_and_fatal_signal_pending(current)) { 	\
+-			break;						\
+-		}							\
+ 		cmd;								\
+ 	}									\
+ 	finish_wait(&wq_head, &__wq_entry);					\
+ __out:	__ret;									\
+ })
+-//#endif
+ 
+ #define __wait_event(wq_head, condition)					\
+ 	(void)___wait_event(wq_head, condition, TASK_UNINTERRUPTIBLE, 0, 0,	\
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index 2eb8728a90..c0a346e352 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -843,10 +843,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		 * wait_lock. This ensures the lock cancellation is ordered
+ 		 * against mutex_unlock() and wake-ups do not go missing.
+ 		 */
+-		//#ifdef CONFIG_PRODUCT_REALME_TRINKET fangpan@Swdp.shanghai,2015/11/12
+-		if (unlikely(signal_pending_state(state, current))
+-			|| hung_long_and_fatal_signal_pending(current)) {
+-		//#endif
++		if (unlikely(signal_pending_state(state, current))) {
+ 			ret = -EINTR;
+ 			goto err;
+ 		}
+diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+index 3f6c084be9..62096bb4e8 100644
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -426,12 +426,6 @@ __rwsem_down_read_failed_common(struct rw_semaphore *sem, int state)
+ 			raw_spin_unlock_irq(&sem->wait_lock);
+ 			break;
+ 		}
+-		#ifdef CONFIG_PRODUCT_REALME_TRINKET // fangpan@Swdp.shanghai,2015/11/12
+-		if (hung_long_and_fatal_signal_pending(current)) {
+-			list_del(&waiter.list);
+-			break;
+-		}
+-		#endif
+ 		schedule();
+ 	}
+ 
+diff --git a/kernel/locking/semaphore.c b/kernel/locking/semaphore.c
+index 500370d7ab..561acdd399 100644
+--- a/kernel/locking/semaphore.c
++++ b/kernel/locking/semaphore.c
+@@ -33,9 +33,6 @@
+ #include <linux/semaphore.h>
+ #include <linux/spinlock.h>
+ #include <linux/ftrace.h>
+-#ifdef CONFIG_PRODUCT_REALME_TRINKET//Fanhong.Kong@ProDrv.CHG,add 2018/12/19 for DeathHealer kernel 4.14
+-#include <linux/sched/signal.h>
+-#endif /*CONFIG_PRODUCT_REALME_TRINKET*/
+ 
+ static noinline void __down(struct semaphore *sem);
+ static noinline int __down_interruptible(struct semaphore *sem);
+@@ -215,10 +212,7 @@ static inline int __sched __down_common(struct semaphore *sem, long state,
+ 	waiter.up = false;
+ 
+ 	for (;;) {
+-
+-		//#ifdef CONFIG_PRODUCT_REALME_TRINKET fangpan@Swdp.shanghai,2015/11/12
+-		if (signal_pending_state(state, current) || hung_long_and_fatal_signal_pending(current))
+-		//#endif
++		if (signal_pending_state(state, current))
+ 			goto interrupted;
+ 		if (unlikely(timeout <= 0))
+ 			goto timed_out;
+diff --git a/kernel/sched/completion.c b/kernel/sched/completion.c
+index a7c3897152..2ddaec4095 100644
+--- a/kernel/sched/completion.c
++++ b/kernel/sched/completion.c
+@@ -82,9 +82,7 @@ do_wait_for_common(struct completion *x,
+ 
+ 		__add_wait_queue_entry_tail_exclusive(&x->wait, &wait);
+ 		do {
+-			//#ifdef CONFIG_PRODUCT_REALME_TRINKET fangpan@Swdp.shanghai,2015/11/12
+-			if (signal_pending_state(state, current) || hung_long_and_fatal_signal_pending(current)) {
+-			//#endif
++			if (signal_pending_state(state, current)) {
+ 				timeout = -ERESTARTSYS;
+ 				break;
+ 			}
+-- 
+2.39.0
+
