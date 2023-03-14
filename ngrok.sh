@@ -22,16 +22,6 @@ LOG_FILE='/tmp/ngrok.log'
 TELEGRAM_LOG="/tmp/telegram.log"
 CONTINUE_FILE="/tmp/continue"
 
-if [[ -z "${NGROK_TOKEN}" ]]; then
-    echo -e "${ERROR} Please set 'NGROK_TOKEN' environment variable."
-    exit 2
-fi
-
-if [[ -z "${SSH_PASSWORD}" && -z "${SSH_PUBKEY}" && -z "${GH_SSH_PUBKEY}" ]]; then
-    echo -e "${ERROR} Please set 'SSH_PASSWORD' environment variable."
-    exit 3
-fi
-
 if [[ -n "$(uname | grep -i Linux)" ]]; then
     echo -e "${INFO} Install ngrok ..."
     curl -fsSL https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -o ngrok.zip
